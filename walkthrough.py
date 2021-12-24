@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 
 class GibbsData:
-    def __init__(self, M, bi, th, K, n):
-        eff = int(np.ceil((M - bi) / th))
+    def __init__(self, m, bic, thc, K, n):
+        eff = int(np.ceil((m - bic) / thc)) + 1
         self.mu = np.empty((eff, K))
         self.lam = np.empty((eff, K))
         self.P = np.empty((eff, K))
@@ -17,37 +17,47 @@ def updm(x, cl, m, p):
     ps = n * cl + p
     ms = (n * cl * xb + p * m) / ps
     sal = ms + np.random.normal(0, 1) / np.sqrt(ps)
+    array_sum = np.sum(sal)
+    if np.isnan(array_sum):
+        print(sal, 'sal')
+        print(ms, 'ma')
+        print(ps, 'ps')
+        print(n, 'n')
+        print(cl, 'cl')
+        print(xb, 'xb')
+        print(p, 'p')
+        print(m, 'm')
+
     return sal
 
 def updl(x, cm, a, b):
     ash = np.size(x) / 2 + a
     bs = b + sum((x - cm)**2) / 2
-    sal = np.random.gamma(ash, 1 / bs)
-    return sal
+    salc = np.random.gamma(ash, 1 / bs)
+    return salc
 
 def updp(x, P, mu, la):
     K = np.size(P)
     n = np.size(x)
-    sal = np.empty([n, K])
+    salc = np.empty([n, K])
 
     for k in range(K):
-        sal[:, k] = P[k] * norm.pdf(x, mu[k], 1 / np.sqrt(la[k]))
+        salc[:, k] = P[k] * norm.pdf(x, mu[k], 1 / np.sqrt(la[k]))
 
-    mar = np.outer(np.sum(sal, axis=1), * np.ones([1, K]))
-    sal = sal / mar
+    mar = np.outer(np.sum(salc, axis=1), * np.ones([1, K]))
+    salc = salc / mar
 
-    return sal
+    return salc
 
 def newaloc(pij):
-    S = []
-    for Item in pij:
-        temp = np.random.multinomial(1, Item, 1)
-        S.append(temp.flatten())
-    S = np.asarray(S)
+    S = np.zeros(np.shape(pij))
+    for index, item in enumerate(pij):
+        S[index] = np.random.multinomial(1, item, 1)
     nj = np.sum(S, axis=0)
     while np.sum(nj < 1):
-        S = np.random.normal(1, pij)
-        nj = np.sum(S)
+        for index, item in enumerate(pij):
+            S[index] = np.random.multinomial(1, item, 1)
+        nj = np.sum(S, axis=0)
     _, cal = np.where(S == 1)
     return cal, S, nj
 
@@ -57,9 +67,7 @@ def newP(nj, a):
     sal = sal / np.sum(sal)
     return sal
 
-
-
-M = 100
+M = 10000
 bi = 0
 th = 1
 K = 3
@@ -98,8 +106,8 @@ for i in range(M):
         xk = x[np.where(ca == k)]
         cm[k] = updm(xk, cl[k], pmean[k, 0], pmean[k, 1])
         cl[k] = updl(xk, cm[k], plas[k, 0], plas[k, 1])
-
     cpij = updp(x, cP, cm, cl)
+
     ca, cS, cnj = newaloc(cpij)
     cP = newP(cnj, pps)
 
@@ -110,7 +118,10 @@ for i in range(M):
             sal.lam[j, :] = cl
             sal.mu[j, :] = cm
             j = j + 1
-
+    if not np.mod(j, 1000):
+        print(int(np.floor(100*(j/M))))
+        plt.plot(sal.mu[:M-(M-j)])
+        plt.show()
 plt.plot(sal.mu[:-1])
 plt.show()
 
