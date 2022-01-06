@@ -76,6 +76,7 @@ plas = [2, 0.6]
 pps = [1 / 2, 1 / 2, 1 / 2]
 
 x = np.genfromtxt('forMiguel.csv')
+np.random.shuffle(x)
 n = np.size(x)
 eff = np.ceil((M - bi) / th)
 
@@ -118,12 +119,12 @@ for i in range(M):
             sal.lam[j, :] = cl
             sal.mu[j, :] = cm
             j = j + 1
-    if not np.mod(j, 1000):
+    if not np.mod(j, 1000) and j > 1:
         print(int(np.floor(100*(j/M))))
         plt.plot(sal.mu[:M-(M-j)])
         plt.show()
-plt.plot(sal.mu[:-1])
-plt.show()
+#plt.plot(sal.mu[:-1])
+#plt.show()
 
-plt.plot(sal.lam[:-1])
+plt.plot(sal.lam[:-2])
 plt.show()
