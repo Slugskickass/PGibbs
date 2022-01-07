@@ -11,15 +11,23 @@ class GibbsData:
         self.P = np.empty((eff, K))
         self.N = np.empty((n, K))
 
-def updm(x, cl, m, p):
+def updatemean(x, cl, m, p):
+    """
+    This function update the mean of the current data
+    :param x:
+    :param cl:
+    :param m:
+    :param p:
+    :return:
+    """
     n = np.size(x)
     xb = np.mean(x)
     ps = n * cl + p
     ms = (n * cl * xb + p * m) / ps
-    sal = ms + np.random.normal(0, 1) / np.sqrt(ps)
-    array_sum = np.sum(sal)
+    mean_answer = ms + np.random.normal(0, 1) / np.sqrt(ps)
+    array_sum = np.sum(mean_answer)
     if np.isnan(array_sum):
-        print(sal, 'sal')
+        print(mean_answer, 'sal')
         print(ms, 'ma')
         print(ps, 'ps')
         print(n, 'n')
@@ -27,10 +35,9 @@ def updm(x, cl, m, p):
         print(xb, 'xb')
         print(p, 'p')
         print(m, 'm')
+    return mean_answer
 
-    return sal
-
-def updl(x, cm, a, b):
+def updatelambda(x, cm, a, b):
     ash = np.size(x) / 2 + a
     bs = b + sum((x - cm)**2) / 2
     salc = np.random.gamma(ash, 1 / bs)
@@ -67,15 +74,15 @@ def newP(nj, a):
     sal = sal / np.sum(sal)
     return sal
 
-M = 10000
-bi = 0
-th = 1
-K = 3
-pmean = [0, 0.1]
-plas = [2, 0.6]
+M = 10000  # Number of interations
+bi = 0  # Burn in period (currently not used)
+th = 1  # Number of times between storing the data
+K = 3  # The number of distributions
+pmean = [0, 0.1]  # The prior mean, unchanged
+plas = [2, 0.6]   # The prior precision, unchanged
 pps = [1 / 2, 1 / 2, 1 / 2]
 
-x = np.genfromtxt('forMiguel.csv')
+x = np.genfromtxt('forMiguel.csv')  # Loads in the test data
 np.random.shuffle(x)
 n = np.size(x)
 eff = np.ceil((M - bi) / th)
@@ -90,7 +97,7 @@ nr = np.linalg.matrix_rank(plas)
 if nr == 1:
     plas = np.ones((K, 2)) * plas
 
-cm = np.linspace(max(x), min(x), K)
+cm = np.linspace(max(x), min(x), K)  # Current mean, this holds the currect estimation of the mean for each distribution
 
 cl = np.linspace(1, 10, K)
 
@@ -105,8 +112,8 @@ j = 0
 for i in range(M):
     for k in range(K):
         xk = x[np.where(ca == k)]
-        cm[k] = updm(xk, cl[k], pmean[k, 0], pmean[k, 1])
-        cl[k] = updl(xk, cm[k], plas[k, 0], plas[k, 1])
+        cm[k] = updatemean(xk, cl[k], pmean[k, 0], pmean[k, 1])
+        cl[k] = updatelambda(xk, cm[k], plas[k, 0], plas[k, 1])
     cpij = updp(x, cP, cm, cl)
 
     ca, cS, cnj = newaloc(cpij)
@@ -123,8 +130,6 @@ for i in range(M):
         print(int(np.floor(100*(j/M))))
         plt.plot(sal.mu[:M-(M-j)])
         plt.show()
-#plt.plot(sal.mu[:-1])
-#plt.show()
 
 plt.plot(sal.lam[:-2])
 plt.show()
